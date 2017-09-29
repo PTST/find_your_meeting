@@ -120,7 +120,6 @@ Execution of functions
 #last_column=input("Last column: ").upper()
 last_column = "OQ"
 workbook, excel_sheet, max_cell = load_excel(last_column)
-orig_workbook = copy.copy(workbook)
 master_list, possible_locations, up_down_locations = excel_to_list(excel_sheet, max_cell)
 search_grid = Grid(matrix=master_list)
 
