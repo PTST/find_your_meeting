@@ -44,7 +44,7 @@ path, runs = finder.find_path(start, end, grid)
 
 print('operations:', runs, 'path length:', len(path))
 for item in path:
-    sheet.cell(row=item[1], column=item[0]).value = "x"
+    sheet.cell(row=(item[1]+1), column=(item[0]+1)).value = "x"
 
 wb.save('/Users/PTST/Dev/find_your_meeting/path.xlsx')
 
