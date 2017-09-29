@@ -1,5 +1,7 @@
 import openpyxl
-
+from pathfinding.core.diagonal_movement import DiagonalMovement
+from pathfinding.core.grid import Grid
+from pathfinding.finder.a_star import AStarFinder
 
 '''
 OQ
@@ -26,4 +28,23 @@ for y in range(1, maxCell+1):
 
 for key, value in location_dict.items() :
     print (key, value)
+
+grid = Grid(matrix=master_list)
+
+startNode = "h1.25d"
+endNode = "kantinen"
+
+location_dict[startNode][0], location_dict[startNode][1]
+
+start = grid.node(location_dict[startNode][0], location_dict[startNode][1])
+end = grid.node(location_dict[endNode][0], location_dict[endNode][1])
+
+finder = AStarFinder(diagonal_movement=DiagonalMovement.always)
+path, runs = finder.find_path(start, end, grid)
+
+print('operations:', runs, 'path length:', len(path))
+for item in path:
+    sheet.cell(row=item[1], column=item[0]).value = "x"
+
+wb.save('/Users/PTST/Dev/find_your_meeting/path.xlsx')
 
