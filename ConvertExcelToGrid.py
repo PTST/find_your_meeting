@@ -14,7 +14,7 @@ if os == "win32":
 elif os == "darwin":
     wb = openpyxl.load_workbook('/Users/PTST/Dev/find_your_meeting/groundFloor.xlsx')
 else:
-    raise ValueError("OS is not set")
+    raise ValueError("Unknown OS")
 
 sheet = wb.get_sheet_by_name(wb.get_sheet_names()[0])
 maxCell = openpyxl.utils.column_index_from_string("OQ") 
@@ -60,6 +60,6 @@ if os == "win32":
 elif os == "darwin":
     wb.save('/Users/PTST/Dev/find_your_meeting/path.xlsx')
 else:
-    raise ValueError("OS is not set")
+    raise ValueError("Unknown OS")
 
 
