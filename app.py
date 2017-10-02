@@ -8,21 +8,48 @@ import openpyxl
 import os
 import time
 import concurrent.futures
-
+import find_room
 
 '''
 Import variables from external files
 '''
-basement_list = list(np.load("resources/Basement.npy"))
-ground_floor_list = list(np.load("resources/GroundFloor.npy"))
-first_floor_list = list(np.load("resources/SecondFloor.npy"))
-tower_list = list(np.load("resources/Tower.npy"))
-with open("resources/locations.json", "r") as f:
-    jsonfile = f.read()
-locations = json.loads(jsonfile)
-with open("resources/up_down.json", "r") as f:
-    jsonfile = f.read()
-up_down = json.loads(jsonfile)
+operating_system = sys.platform
+def import_vars():
+    floor_plans_dict = {}
+    if operating_system == "darwin":
+        floor_plans_dict[0] = list(np.load("resources/Basement.npy"))
+        floor_plans_dict[1] = list(np.load("resources/GroundFloor.npy"))
+        floor_plans_dict[2] = list(np.load("resources/SecondFloor.npy"))
+        floor_plans_dict[3] = list(np.load("resources/Tower.npy"))
+        with open("resources/locations.json", "r") as f:
+            jsonfile = f.read()
+        locations_list = json.loads(jsonfile)
+        with open("resources/up_down.json", "r") as f:
+            jsonfile = f.read()
+        up_down_list = json.loads(jsonfile)
+    elif operating_system == "win32":
+        floor_plans_dict[0] = list(np.load("M:\\GitHub\\find_your_meeting\\resources\\Basement.npy"))
+        floor_plans_dict[1] = list(np.load("M:\\GitHub\\find_your_meeting\\resources\\GroundFloor.npy"))
+        floor_plans_dict[2] = list(np.load("M:\\GitHub\\find_your_meeting\\resources\\SecondFloor.npy"))
+        floor_plans_dict[3] = list(np.load("M:\\GitHub\\find_your_meeting\\resources\\Tower.npy"))
+        with open("M:\\GitHub\\find_your_meeting\\resources\\locations.json", "r") as f:
+            jsonfile = f.read()
+        locations_list = json.loads(jsonfile)
+        with open("M:\\GitHub\\find_your_meeting\\resources\\up_down.json", "r") as f:
+            jsonfile = f.read()
+        up_down_list = json.loads(jsonfile)
+    elif operating_system == "linux":
+        floor_plans_dict[0] = list(np.load("/pytest/resources/Basement.npy"))
+        floor_plans_dict[1] = list(np.load("/pytest/resources/GroundFloor.npy"))
+        floor_plans_dict[2] = list(np.load("/pytest/resources/SecondFloor.npy"))
+        floor_plans_dict[3] = list(np.load("/pytest/resources/Tower.npy"))
+        with open("/pytest/resources/locations.json", "r") as f:
+            jsonfile = f.read()
+        locations_list = json.loads(jsonfile)
+        with open("/pytest/resources/up_down.json", "r") as f:
+            jsonfile = f.read()
+        up_down_list = json.loads(jsonfile)
+    return floor_plans_dict, locations_list, up_down_list
 
 def select_start_end(loc_dict):
     while True:
@@ -47,17 +74,7 @@ def select_start_end(loc_dict):
             break
     return start_point, end_point
 
-def find_path(location_dict, start_point, end_point, grid):
-    start = grid.node(location_dict[start_point][0], location_dict[start_point][1])
-    end = grid.node(location_dict[end_point][0], location_dict[end_point][1])
-    finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
-    path, runs = finder.find_path(start, end, grid)
-
-    print("operations:", runs, "path length:", len(path))
-    return path
-
 def load_excel():
-    operating_system = sys.platform
     if operating_system == "win32":
         wb = openpyxl.load_workbook("M:\\GitHub\\find_your_meeting\\floorPlan.xlsm")
     elif operating_system == "darwin":
@@ -67,10 +84,7 @@ def load_excel():
     return wb
 
 def save_to_excel(wb, path, floors):
-    operating_system = sys.platform
     for i in range(len(path)):
-        print(floors[i])
-        print(type(floors[i]))
         sheet = wb.get_sheet_by_name(wb.get_sheet_names()[int(floors[i])])
         for item in path[i]:
             sheet.cell(row=(item[1]+1), column=(item[0]+1)).value = "x"
@@ -85,76 +99,10 @@ def save_to_excel(wb, path, floors):
     else:
         raise ValueError("Unknown operating system")
 
-def multiple_floors(counter, floor_no, going_up):
-    if floor_no == 0:
-        floor = basement_list
-    elif floor_no == 1:
-        floor = ground_floor_list
-    elif floor_no == 2:
-        floor = first_floor_list
-    elif floor_no == 3:
-        floor = tower_list
-    else:
-        raise ValueError("WTF")
-    
-    if counter == 0:
-        if going_up:
-            direction = "UP"
-        else:
-            direction = "DOWN"
-    else:
-        if going_up:
-            direction = "DOWN"
-        else:
-            direction = "UP"
-    executor = concurrent.futures.ProcessPoolExecutor(20)
-    futures = [executor.submit(get_floor_paths, key, direction, floor_no, floor) for key, value in up_down.items()]
-    concurrent.futures.wait(futures)
-        #get_floor_paths(key, direction, floor_no, floor)
+if __name__ == '__main__':
 
-def get_floor_paths(a, direction, floor_no, floor):
-    if a.endswith(direction) and a.startswith(str(floor_no)):
-        search_grid = Grid(matrix=floor)
-        if counter == 0:
-            found_path = find_path(locations, start_loc, a, search_grid)
-            if len(found_path) != 0:
-                paths_start[a] = found_path
-        elif counter == 1:
-            found_path = find_path(locations, a, end_loc, search_grid)
-            if len(found_path) != 0:
-                paths_end[a] = found_path
-
-start_time = time.time()
-#start_loc, end_loc = select_start_end(locations)
-start_loc, end_loc = "H2.06", "H1.25"
-start_floor, end_floor = start_loc[1], end_loc[1]
-
-if start_floor != end_floor:
-    paths_start = {}
-    paths_end = {}
-    upwards = (start_floor < end_floor)
-    print(upwards)
-    for counter, floor_id in enumerate([int(start_floor), int(end_floor)]):
-        multiple_floors(counter, floor_id, upwards)
-        
-
-best_value = sys.maxsize
-best_path = []
-for key, value in paths_start.items():
-    for key2, value2 in paths_end.items():
-        if key[2:3] == key2[2:3]:
-            total = len(value) + len(value2)
-            if total < best_value:
-                best_value = total
-                best_path = []
-                best_path.append(value)
-                best_path.append(value2)
-
-print("--- %s seconds ---" % (time.time() - start_time))
-
-#workbook = load_excel()
-#save_to_excel(workbook, best_path, [start_floor, end_floor])
-
-
-        
-
+    floor_plans, locations, up_down = import_vars()
+    start_loc, end_loc = select_start_end(locations)
+    best_path = find_room.run(start_loc, end_loc, floor_plans, locations, up_down)
+    workbook = load_excel()
+    save_to_excel(workbook, best_path, [start_loc[1:2], end_loc[1:2]])
