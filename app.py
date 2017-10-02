@@ -6,6 +6,8 @@ from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 import openpyxl
 import os
+import time
+import concurrent.futures
 
 
 '''
@@ -83,48 +85,58 @@ def save_to_excel(wb, path, floors):
     else:
         raise ValueError("Unknown operating system")
 
+def multiple_floors(counter, floor_no, going_up):
+    if floor_no == 0:
+        floor = basement_list
+    elif floor_no == 1:
+        floor = ground_floor_list
+    elif floor_no == 2:
+        floor = first_floor_list
+    elif floor_no == 3:
+        floor = tower_list
+    else:
+        raise ValueError("WTF")
+    
+    if counter == 0:
+        if going_up:
+            direction = "UP"
+        else:
+            direction = "DOWN"
+    else:
+        if going_up:
+            direction = "DOWN"
+        else:
+            direction = "UP"
+    executor = concurrent.futures.ProcessPoolExecutor(20)
+    futures = [executor.submit(get_floor_paths, key, direction, floor_no, floor) for key, value in up_down.items()]
+    concurrent.futures.wait(futures)
+        #get_floor_paths(key, direction, floor_no, floor)
 
-start_loc, end_loc = select_start_end(locations)
+def get_floor_paths(a, direction, floor_no, floor):
+    if a.endswith(direction) and a.startswith(str(floor_no)):
+        search_grid = Grid(matrix=floor)
+        if counter == 0:
+            found_path = find_path(locations, start_loc, a, search_grid)
+            if len(found_path) != 0:
+                paths_start[a] = found_path
+        elif counter == 1:
+            found_path = find_path(locations, a, end_loc, search_grid)
+            if len(found_path) != 0:
+                paths_end[a] = found_path
+
+start_time = time.time()
+#start_loc, end_loc = select_start_end(locations)
+start_loc, end_loc = "H2.06", "H1.25"
 start_floor, end_floor = start_loc[1], end_loc[1]
 
 if start_floor != end_floor:
     paths_start = {}
     paths_end = {}
-    going_up = (start_floor < end_floor)
-    counter = 0
-    for floor_no in (start_floor, end_floor):
-        counter += 1
-        if floor_no == "0":
-            floor = basement_list
-        elif floor_no == "1":
-            floor = ground_floor_list
-        elif floor_no == "2":
-            floor = first_floor_list
-        elif floor_no == "3":
-            floor = tower_list
-        else:
-            raise ValueError("WTF")
-        if counter == 1:
-            if going_up:
-                direction = "UP"
-            else:
-                direction = "DOWN"
-        else:
-            if going_up:
-                direction = "DOWN"
-            else:
-                direction = "UP"
-        for key, value in up_down.items():
-            if key.endswith(direction) and key.startswith(floor_no):
-                search_grid = Grid(matrix=floor)
-                if counter == 1:
-                    found_path = find_path(locations, start_loc, key, search_grid)
-                    if len(found_path) != 0:
-                        paths_start[key] = found_path
-                elif counter == 2:
-                    found_path = find_path(locations, key, end_loc, search_grid)
-                    if len(found_path) != 0:
-                        paths_end[key] = found_path
+    upwards = (start_floor < end_floor)
+    print(upwards)
+    for counter, floor_id in enumerate([int(start_floor), int(end_floor)]):
+        multiple_floors(counter, floor_id, upwards)
+        
 
 best_value = sys.maxsize
 best_path = []
@@ -134,11 +146,14 @@ for key, value in paths_start.items():
             total = len(value) + len(value2)
             if total < best_value:
                 best_value = total
+                best_path = []
                 best_path.append(value)
                 best_path.append(value2)
 
-workbook = load_excel()
-save_to_excel(workbook, best_path, [start_floor, end_floor])
+print("--- %s seconds ---" % (time.time() - start_time))
+
+#workbook = load_excel()
+#save_to_excel(workbook, best_path, [start_floor, end_floor])
 
 
         
