@@ -4,6 +4,8 @@ import sys
 from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
+import openpyxl
+import os
 
 
 '''
@@ -51,6 +53,35 @@ def find_path(location_dict, start_point, end_point, grid):
 
     print("operations:", runs, "path length:", len(path))
     return path
+
+def load_excel():
+    operating_system = sys.platform
+    if operating_system == "win32":
+        wb = openpyxl.load_workbook("M:\\GitHub\\find_your_meeting\\floorPlan.xlsm")
+    elif operating_system == "darwin":
+        wb = openpyxl.load_workbook("/Users/PTST/Dev/find_your_meeting/floorPlan.xlsm")
+    else:
+        raise ValueError("Unknown operating system")
+    return wb
+
+def save_to_excel(wb, path, floors):
+    operating_system = sys.platform
+    for i in range(len(path)):
+        print(floors[i])
+        print(type(floors[i]))
+        sheet = wb.get_sheet_by_name(wb.get_sheet_names()[int(floors[i])])
+        for item in path[i]:
+            sheet.cell(row=(item[1]+1), column=(item[0]+1)).value = "x"
+            sheet.cell(row=(item[1]+1), column=(item[0]+1)).font = openpyxl.styles.Font(color=openpyxl.styles.colors.RED)
+            sheet.cell(row=(item[1]+1), column=(item[0]+1)).fill = openpyxl.styles.PatternFill(fgColor=openpyxl.styles.colors.RED, fill_type = "solid")
+    if operating_system == "win32":
+        wb.save("M:\\GitHub\\find_your_meeting\path.xlsx")
+        os.startfile("M:\\GitHub\\find_your_meeting\path.xlsx")
+    elif operating_system == "darwin":
+        wb.save("/Users/PTST/Dev/find_your_meeting/path.xlsx")
+        os.system("open /Users/PTST/Dev/find_your_meeting/path.xlsx")
+    else:
+        raise ValueError("Unknown operating system")
 
 
 start_loc, end_loc = select_start_end(locations)
@@ -103,9 +134,12 @@ for key, value in paths_start.items():
             total = len(value) + len(value2)
             if total < best_value:
                 best_value = total
-                best_path = value + value2
+                best_path.append(value)
+                best_path.append(value2)
 
-print(best_path)
+workbook = load_excel()
+save_to_excel(workbook, best_path, [start_floor, end_floor])
+
 
         
 
