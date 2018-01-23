@@ -3,11 +3,11 @@ import copy
 import numpy as np
 import json
 
-wb = openpyxl.load_workbook("/Users/PTST/Dev/find_your_meeting/floorPLan.xlsm")
+wb = openpyxl.load_workbook("Basement2.xlsx")
 
 basement, ground_floor, first_floor, tower = [], [], [], []
 
-column_dict = {"Basement":407, "GroundFloor":407, "SecondFloor":344, "Tower":70}
+column_dict = {"Basement":openpyxl.utils.column_index_from_string("AUU"), "GroundFloor":407, "SecondFloor":344, "Tower":70}
 
 location_dict = {}
 up_down_dict = {}
